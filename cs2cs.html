@@ -1,0 +1,104 @@
+<html>
+<head>
+</head>
+<body>
+<div id="output"></div>
+<canvas id="canvas"></canvas>
+<script>
+
+  var Module = {
+    print: (function() {
+      var element = document.getElementById('output');
+      return function(text) {
+        element.innerHTML += text.replace('\n', '<br>', 'g') + '<br>';
+      };
+    })(),
+    canvas: document.getElementById('canvas')
+  };
+</script>
+<script>
+Module.arguments=['+init=epsg:23030', '+to', '+init=epsg:25830','/usr/data'];
+</script>
+<script src="cs2cs.js"></script>
+<script>
+//723885.273 4367524.705
+</script>
+<script>
+
+ Module.onRuntimeInitialized = function() {
+  
+	//Crear eps3030
+   	var epsg23030 = Module.ccall('pj_init_plus', // name of C function
+	  'number', // return type => puntero a proyeccion
+	  ['string'], // argument types
+	  ["+init=epsg:23030"]); // arguments
+
+
+	 //Crear epsg25830
+	 var epsg25830 = Module.ccall('pj_init_plus', // name of C function
+	  'number', // return type => puntero a proyeccion
+	  ['string'], // argument types
+	  ["+init=epsg:25830"]);
+
+	  //Invocar pjTransform, si las proyecciones se crearon correctamente
+	if (epsg23030 != 0 && epsg25830 != 0) {
+	   var arrayX = new Float64Array(1);
+           arrayX[0]=723885.273;
+	   var arrayY = new Float64Array(1);
+	   arrayY[0]=4367524.705;
+
+	   var arrayZ = new Float64Array(1);
+	   arrayZ[0]=0.0;
+	   
+	   Module.print('Before X='+arrayX[0]);	
+	   Module.print('Before Y='+arrayY[0]);
+	   Module.print('Before Z='+arrayZ[0]);
+
+	   var xBuffer = Module._malloc(arrayX.length*arrayX.BYTES_PER_ELEMENT);
+   	   var yBuffer = Module._malloc(arrayY.length*arrayY.BYTES_PER_ELEMENT);
+  	   var zBuffer = Module._malloc(arrayZ.length*arrayZ.BYTES_PER_ELEMENT);
+	 
+           var dataHeapX = new Uint8Array(Module.HEAPU8.buffer, xBuffer, 			arrayX.length*arrayX.BYTES_PER_ELEMENT);
+	   dataHeapX.set(new Uint8Array(arrayX.buffer));
+
+	   var dataHeapY = new Uint8Array(Module.HEAPU8.buffer, yBuffer, 		arrayY.length*arrayY.BYTES_PER_ELEMENT);
+	  dataHeapY.set(new Uint8Array(arrayY.buffer));
+
+	   var dataHeapZ = new Uint8Array(Module.HEAPU8.buffer, zBuffer, 		arrayZ.length*arrayZ.BYTES_PER_ELEMENT);
+	  dataHeapZ.set(new Uint8Array(arrayZ.buffer));
+
+   	   var result = Module.ccall('pj_transform', // name of C function
+	  'number', // return codigo de error
+	  ['number','number','number','number','number','number','number'], //argument types
+	  [epsg23030, epsg25830,1,1, dataHeapX.byteOffset,  
+dataHeapY.byteOffset,dataHeapZ.byteOffset]); // arguments
+	
+	arrayX = new Float64Array(dataHeapX.buffer, dataHeapX.byteOffset, 1);
+	arrayY = new Float64Array(dataHeapY.buffer, dataHeapY.byteOffset, 1);
+	arrayZ = new Float64Array(dataHeapZ.buffer, dataHeapZ.byteOffset, 1);
+	
+	Module.print('After X=' + arrayX[0]);	
+	Module.print('After Y=' + arrayY[0]);
+	Module.print('After Z=' + arrayZ[0]);
+	// Free memory
+	Module._free(dataHeapX.byteOffset);
+	// Free memory
+	Module._free(dataHeapY.byteOffset);
+	// Free memory
+	Module._free(dataHeapZ.byteOffset);
+	
+	/*
+   		int pj_transform( epsg23030 ,
+                    epsg25830,
+                    1, //count
+                    1, //offset
+                  double *x,
+                  double *y,
+                  double *z ); 
+	 */
+	}
+       
+   };
+  </script>
+</body>
+</html>
